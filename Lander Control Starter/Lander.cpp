@@ -245,6 +245,13 @@ void Lander_Control(void)
  // effect, i.e. the rotation angle does not accumulate
  // for successive calls.
 
+ if (!MT_OK){
+
+  Right_Thruster(1);
+  Left_Thruster(1);
+
+ }
+ else{
  if (Angle()>1&&Angle()<359)
  {
   if (Angle()>=180) Rotate(360-Angle());
@@ -284,6 +291,11 @@ void Lander_Control(void)
  // Safety_Override() to save us from crashing with the ground.
  if (Velocity_Y()<VYlim) Main_Thruster(1.0);
  else Main_Thruster(0);
+
+
+} // case switch 
+
+
 }
 
 void Safety_Override(void)
