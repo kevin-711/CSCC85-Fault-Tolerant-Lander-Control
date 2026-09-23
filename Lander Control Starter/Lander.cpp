@@ -247,8 +247,10 @@ void Lander_Control(void)
 
  if (!MT_OK){
 
-  Right_Thruster(1);
-  Left_Thruster(1);
+  Rotate(90);
+
+  Right_Thruster(0.5);
+  // Left_Thruster(1);
 
  }
  else{
