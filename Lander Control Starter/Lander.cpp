@@ -159,6 +159,7 @@
   Standard C libraries
 */
 #include <math.h>
+#include <iostream> // for debugging
 
 #include "Lander_Control.h"
 
@@ -245,12 +246,21 @@ void Lander_Control(void)
  // effect, i.e. the rotation angle does not accumulate
  // for successive calls.
 
+
  if (!MT_OK){
 
-  Rotate(90);
+  
+  double curr_angle = Angle();
 
-  Right_Thruster(0.5);
-  // Left_Thruster(1);
+  if (curr_angle >= 0 && curr_angle<=10) {
+        Rotate(90);
+
+  }else{
+      Right_Thruster(0.2);
+
+  }
+
+  Left_Thruster(0);
 
  }
  else{
