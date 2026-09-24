@@ -178,6 +178,22 @@ void rotateToAngle(double target)
   }
 }
 
+double getDefaultAngle(void)
+{
+  if (MT_OK)
+  {
+    return 0.0;
+  }
+  else if (RT_OK)
+  {
+    return 90.0;
+  }
+  else
+  {
+    return 270.0;
+  }
+}
+
 void Lander_Control(void)
 {
   /*
@@ -232,7 +248,7 @@ void Lander_Control(void)
 
   double VXlim;
   double VYlim;
-  double defaultAngle;
+  double defaultAngle = getDefaultAngle();
   double tilt;
 
   // Set velocity limits depending on distance to platform.
@@ -273,7 +289,8 @@ void Lander_Control(void)
   if (!MT_OK || !RT_OK || !LT_OK)
   {
 
-    if (fabs(PLAT_Y - Position_Y()) < 35) {
+    if (fabs(PLAT_X - Position_X()) < 20 && fabs(PLAT_Y - Position_Y()) < 35)
+    {
       Main_Thruster(0);
       Right_Thruster(0);
       Left_Thruster(0);
@@ -283,8 +300,6 @@ void Lander_Control(void)
 
     if (MT_OK)
     {
-      defaultAngle = 0;
-
       // Module is oriented properly, check for horizontal position
       // and set thrusters appropriately.
       if (Position_X() > PLAT_X)
@@ -336,8 +351,6 @@ void Lander_Control(void)
     }
     else if (RT_OK)
     {
-      defaultAngle = 90;
-
       // Module is oriented properly, check for horizontal position
       // and set thrusters appropriately.
       if (Position_X() > PLAT_X)
@@ -386,9 +399,9 @@ void Lander_Control(void)
         Right_Thruster(1.0);
       else
         Right_Thruster(0.35);
-    } else {
-      defaultAngle = 270;
-
+    }
+    else
+    {
       // Module is oriented properly, check for horizontal position
       // and set thrusters appropriately.
       if (Position_X() > PLAT_X)
@@ -438,9 +451,9 @@ void Lander_Control(void)
       else
         Left_Thruster(0.35);
     }
-
-
-  } else {
+  }
+  else
+  {
     // This is just the starter code
 
     if (Angle() > 1 && Angle() < 359)
@@ -486,8 +499,8 @@ void Lander_Control(void)
         Main_Thruster(1.0);
       else
         Main_Thruster(0);
-      }
     }
+  }
 }
 
 void Safety_Override(void)
@@ -520,12 +533,11 @@ void Safety_Override(void)
     carry out speed corrections using the thrusters
   **************************************************/
 
-  //
-  return;
-
   double DistLimit;
   double Vmag;
   double dmin;
+  double defaultAngle = getDefaultAngle();
+  double tilt = 60;
 
   // Establish distance threshold based on lander
   // speed (we need more time to rectify direction
@@ -567,24 +579,61 @@ void Safety_Override(void)
   // what is it?
   if (dmin < DistLimit * fmax(.25, fmin(fabs(Velocity_X()) / 5.0, 1)))
   { // Too close to a surface in the horizontal direction
-    if (Angle() > 1 && Angle() < 359)
-    {
-      if (Angle() >= 180)
-        Rotate(360 - Angle());
-      else
-        Rotate(-Angle());
-      return;
-    }
 
-    if (Velocity_X() > 0)
+    if (!MT_OK || !RT_OK || !LT_OK)
     {
-      Right_Thruster(1.0);
-      Left_Thruster(0.0);
+      if (Velocity_X() > 0)
+      {
+        if (MT_OK)
+        {
+          rotateToAngle(defaultAngle - tilt);
+          Main_Thruster(1.0);
+        }
+        else if (RT_OK)
+        {
+          rotateToAngle(defaultAngle - tilt);
+          Right_Thruster(1.0);
+        }
+        else
+        {
+          rotateToAngle(defaultAngle - tilt);
+          Left_Thruster(1.0);
+        }
+      }
+      else
+      {
+        if (MT_OK)
+        {
+          rotateToAngle(defaultAngle + tilt);
+          Main_Thruster(1.0);
+        }
+        else if (RT_OK)
+        {
+          rotateToAngle(defaultAngle + tilt);
+          Right_Thruster(1.0);
+        }
+        else
+        {
+          rotateToAngle(defaultAngle + tilt);
+          Left_Thruster(1.0);
+        }
+      }
     }
     else
     {
-      Left_Thruster(1.0);
-      Right_Thruster(0.0);
+      // Starter code behaviour
+      rotateToAngle(0);
+
+      if (Velocity_X() > 0)
+      {
+        Right_Thruster(1.0);
+        Left_Thruster(0.0);
+      }
+      else
+      {
+        Left_Thruster(1.0);
+        Right_Thruster(0.0);
+      }
     }
   }
 
@@ -605,23 +654,55 @@ void Safety_Override(void)
       if (SONAR_DIST[i] > -1 && SONAR_DIST[i] < dmin)
         dmin = SONAR_DIST[i];
   }
-  if (dmin < DistLimit) // Too close to a surface in the horizontal direction
+
+  if (dmin < DistLimit) // Too close to a surface in the vertical direction
   {
-    if (Angle() > 1 || Angle() > 359)
+    if (!MT_OK || !RT_OK || !LT_OK)
     {
-      if (Angle() >= 180)
-        Rotate(360 - Angle());
+      if (Velocity_Y() > 2.0)
+      {
+        if (MT_OK)
+        {
+          Main_Thruster(0.0);
+        }
+        else if (RT_OK)
+        {
+          Right_Thruster(0.0);
+        }
+        else
+        {
+          Left_Thruster(0.0);
+        }
+      }
       else
-        Rotate(-Angle());
-      return;
-    }
-    if (Velocity_Y() > 2.0)
-    {
-      Main_Thruster(0.0);
+      {
+        if (MT_OK)
+        {
+          Main_Thruster(1.0);
+        }
+        else if (RT_OK)
+        {
+          Right_Thruster(1.0);
+        }
+        else
+        {
+          Left_Thruster(1.0);
+        }
+      }
     }
     else
     {
-      Main_Thruster(1.0);
+      // Starter code behaviour
+      rotateToAngle(0);
+
+      if (Velocity_Y() > 2.0)
+      {
+        Main_Thruster(0.0);
+      }
+      else
+      {
+        Main_Thruster(1.0);
+      }
     }
   }
 }
