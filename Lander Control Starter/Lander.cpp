@@ -159,9 +159,166 @@
   Standard C libraries
 */
 #include <math.h>
-
+#include <stdio.h>
 #include "Lander_Control.h"
 
+#define VSAMPLES 10 // Number of sample readings
+#define PSAMPLES 40 // Samples for position as its more noisy
+#define DT 0.03      // Assumed time per iteration - (im assuming each iteration is one second)
+#define MAX_RANGE_V 6.0 // maximum ranges / differences between velocity readings
+#define MAX_RANGE_P 45.0 // same as above for position
+#define MIN_AGREE_SCORE 0.7 // the percent of sample reading that are within range / agree on that reading
+#define MAX_GAP_V 12.0     // Maximum gap between two Velocity readings for them to agree
+#define MAX_GAP_P 30.0    // same as above for Position
+
+double sVX[VSAMPLES], sVY[VSAMPLES], sPX[PSAMPLES], sPY[PSAMPLES]; // Arrays to track samples  V-Velocity P-Position 
+double estVX = 0, estVY = 0, estPX = 0, estPY = 0;      // final estimated and noise-reduced readings
+int started=0; // counting iterations
+
+// This function logs the latest sample at the end of the array of samples when called
+void logSamples(double *samples,int n, double reading){ // n is number of samples
+  for(int i=0; i <n - 1; i++){
+    samples[i]= samples[i+1];  
+  }
+  samples[n-1]=reading;
+}
+
+// This is to fill the samples array the first time to avoid any empty indexes later on
+void fillSamples(double *samples, int n, double reading){
+  for(int i=0; i < n; i++){
+    samples[i]= reading;  
+  }
+}
+
+// This hlper finds the largest group of samples from the total samples with 
+// similar / close readings and returns the average of those readings while filtering out any bad cases
+double averageReading(double *samples, int n, double gap, double range, double *agree){
+  double a[PSAMPLES];
+  for (int i = 0; i < n; i++){                // This is aligning the samples based on which iteration = index it happend
+    a[i] = samples[i] + gap * (n - 1 - i);  // This acounts for having changes in readings in each iteration and
+  }                                                // this makes sure old readings are not messing with average
+
+    int bestCount = 0;
+    int index = 0;
+    
+    for (int i = 0; i < n; i++){   // This is calculating the mode of the readings
+      int count = 0;                     // Iterating through sample readings and comparing to find the most occuring reading
+      for (int j = 0; j < n; j++)
+        if (fabs(a[j] - a[i]) <= range){
+          count++;
+        }
+      if (count > bestCount){ 
+        bestCount = count; 
+        index = i; 
+      }
+    }
+    double sum = 0; //sum of readings that are close
+    int m = 0; // number of readings that are close
+    for(int i=0; i<n ; i++){
+      if(fabs(a[i] - a[index]) <= range){
+        sum+=a[i];
+        m++;
+      }
+    }
+  *agree = (double)m / n; // percentange of samples that similar readings
+  return sum / m;
+}
+// Calculates the change of position for velocity
+double changeInP(double *samples, int n){
+  int k = n/4;
+  double oldAvg = 0;                 
+  double newAvg = 0;
+  for (int i = 0; i < k; i++){
+    oldAvg += samples[i];          // get average of older samples     // this is for redundancy
+    newAvg += samples[n-1-i];     // average of newer samples
+  }
+  oldAvg = oldAvg / k;
+  newAvg = newAvg / k;
+  return (newAvg - oldAvg)/((n-k)*DT);     // redundant velocity calculation from position  (v=d/t)
+}
+
+//helper to get the closest value
+double closest(double a, double b, double ref){
+  if(fabs(a-ref) <= fabs(b-ref)){
+    return a;
+  }
+  return b;
+}
+
+// Estimates and returns a position and uses *ok for if its good or bas estimate 
+double combinePosition(double *samples, double direction, double velocity, double prev, int *ok){
+  double agree;
+  double mean = averageReading(samples, PSAMPLES, direction*velocity*DT, MAX_RANGE_P, &agree);
+  double predicted = prev + direction*velocity*DT;
+  if((agree >= MIN_AGREE_SCORE) && (fabs(mean - predicted) <= MAX_GAP_P)){   // SENSOR is correct if the percentage of similar samples is in range 
+    *ok = 1;                                                                 // and the avg position is close enough to the estimated prosition based on velocity
+  }
+  else{
+    *ok=0;
+  }
+  return mean;
+}
+double combineVelocity(double *samplesV, double *samplesP, double direction, double prev, int pOk){
+  double agree;
+  double velMean = averageReading(samplesV, VSAMPLES, 0.0, MAX_RANGE_V, &agree);
+  int vOk = 0;
+  if (agree >= MIN_AGREE_SCORE){  // check if enough percent of velocity readings give similar results
+    vOk = 1;
+  }
+  double velP = direction * changeInP(samplesP, PSAMPLES); // getting velocity from position samples
+  if(vOk && pOk){
+    if(fabs(velMean - velP) <= MAX_GAP_V){ // both of the calculated velocities are close
+      return velMean; 
+    }
+    return closest(velMean, velP, prev);  // return closest to previous reading
+  }
+  if(vOk) return velMean;
+  if(pOk) return velP;
+  return(prev);          // if neither position or velocity accurately calculates velocity, return previous velocyt reading
+  // MAY NEED TO CHANGE
+}
+ void redundantSensor(void){
+
+  if(!started){
+    estVX = Velocity_X();
+    estVY = Velocity_Y();
+    estPX = Position_X(); 
+    estPY = Position_Y();
+    fillSamples(sVX, VSAMPLES, estVX);
+    fillSamples(sVY, VSAMPLES, estVY);
+    fillSamples(sPX, PSAMPLES, estPX);
+    fillSamples(sPY, PSAMPLES, estPY);
+    started=1;
+    return;
+  }
+  logSamples(sVX, VSAMPLES, Velocity_X());
+  logSamples(sVY, VSAMPLES, Velocity_Y());
+  logSamples(sPX, PSAMPLES, Position_X());
+  logSamples(sPY, PSAMPLES, Position_Y());
+
+
+  int okX; // if position sensors reading are accurate
+  int okY;
+  double pX = combinePosition(sPX, 1.0, estVX, estPX, &okX); // calculated positions
+  double pY = combinePosition(sPY, -1.0, estVY, estPY, &okY);
+
+  estVX = combineVelocity(sVX, sPX, 1.0, estVX, okX);
+  estVY = combineVelocity(sVY, sPY, -1.0, estVY, okY);
+
+  if(okX){
+    estPX = pX;
+  }
+  else{
+    estPX = estPX + estVX * DT;
+  }
+
+  if(okY){
+    estPY = pY;
+  }
+  else{
+    estPY = estPY - estVY * DT;
+  }
+ }
 // Helper fn to rotate the lander to target angle
 void rotateToAngle(double target)
 {
@@ -251,36 +408,37 @@ void Lander_Control(void)
   double defaultAngle = getDefaultAngle();
   double tilt;
 
+  redundantSensor();
   // Set velocity limits depending on distance to platform.
   // If the module is far from the platform allow it to
   // move faster, decrease speed limits as the module
   // approaches landing. You may need to be more conservative
   // with velocity limits when things fail.
-  if (fabs(Position_X() - PLAT_X) > 200)
+  if (fabs(estPX - PLAT_X) > 200)
     VXlim = 25;
-  else if (fabs(Position_X() - PLAT_X) > 100)
+  else if (fabs(estPX - PLAT_X) > 100)
     VXlim = 15;
   else
     VXlim = 5;
 
-  if (fabs(Position_X() - PLAT_X) > 200)
+  if (fabs(estPX - PLAT_X) > 200)
     tilt = 30;
-  else if (fabs(Position_X() - PLAT_X) > 100)
+  else if (fabs(estPX - PLAT_X) > 100)
     tilt = 25;
   else
     tilt = 15;
 
-  if (PLAT_Y - Position_Y() > 200)
+  if (PLAT_Y - estPY > 200)
     VYlim = -20;
-  else if (PLAT_Y - Position_Y() > 100)
+  else if (PLAT_Y - estPY > 100)
     VYlim = -10; // These are negative because they
   else
     VYlim = -4; // limit descent velocity
 
   // Ensure we will be OVER the platform when we land
-  if (fabs(PLAT_X - Position_X()) / fabs(Velocity_X()) > 1.25 * fabs(PLAT_Y - Position_Y()) / fabs(Velocity_Y()))
+  if (fabs(PLAT_X - estPX) / fabs(estVX) > 1.25 * fabs(PLAT_Y - estPY) / fabs(estVY))
     VYlim = 0;
-
+  
   // IMPORTANT NOTE: The code below assumes all components working
   // properly. IT MAY OR MAY NOT BE USEFUL TO YOU when components
   // fail. More likely, you will need a set of case-based code
@@ -289,7 +447,7 @@ void Lander_Control(void)
   if (!MT_OK || !RT_OK || !LT_OK)
   {
 
-    if (fabs(PLAT_X - Position_X()) < 20 && fabs(PLAT_Y - Position_Y()) < 35)
+    if (fabs(PLAT_X - estPX) < 20 && fabs(PLAT_Y - estPY) < 35)
     {
       Main_Thruster(0);
       Right_Thruster(0);
@@ -302,49 +460,49 @@ void Lander_Control(void)
     {
       // Module is oriented properly, check for horizontal position
       // and set thrusters appropriately.
-      if (Position_X() > PLAT_X)
+      if (estPX > PLAT_X)
       {
-        // Lander is to the LEFT of the landing platform, use Right thrusters to move
+        // Lander is to the RIGHT of the landing platform, use Right thrusters to move
         // lander to the left.
 
         Left_Thruster(0);
         Right_Thruster(0); // Make sure we're not fighting ourselves here!
 
-        if (Velocity_X() > (-VXlim))
+        if (estVX > (-VXlim))
         {
           rotateToAngle(defaultAngle - tilt);
-          Main_Thruster((VXlim + fmin(0, Velocity_X())) / VXlim);
+          Main_Thruster((VXlim + fmin(0, estVX)) / VXlim);
         }
         else
         {
           // Exceeded velocity limit, brake
           rotateToAngle(defaultAngle + tilt);
-          Main_Thruster(fabs(VXlim - Velocity_X()));
+          Main_Thruster(fabs(VXlim - estVX));
         }
       }
       else
       {
-        // Lander is to the RIGHT of the landing platform, opposite from above
+        // Lander is to the LEFT of the landing platform, opposite from above
 
         Left_Thruster(0);
         Right_Thruster(0); // Make sure we're not fighting ourselves here!
 
-        if (Velocity_X() < VXlim)
+        if (estVX < VXlim)
         {
           rotateToAngle(defaultAngle + tilt);
-          Main_Thruster((VXlim - fmax(0, Velocity_X())) / VXlim);
+          Main_Thruster((VXlim - fmax(0, estVX)) / VXlim);
         }
         else
         {
           rotateToAngle(defaultAngle - tilt);
-          Main_Thruster(fabs(VXlim - Velocity_X()));
+          Main_Thruster(fabs(VXlim - estVX));
         }
       }
 
       // Vertical adjustments. Basically, keep the module below the limit for
       // vertical velocity and allow for continuous descent. We trust
       // Safety_Override() to save us from crashing with the ground.
-      if (Velocity_Y() < VYlim)
+      if (estVY < VYlim)
         Main_Thruster(1.0);
       else
         Main_Thruster(0.2);
@@ -353,7 +511,7 @@ void Lander_Control(void)
     {
       // Module is oriented properly, check for horizontal position
       // and set thrusters appropriately.
-      if (Position_X() > PLAT_X)
+      if (estPX > PLAT_X)
       {
         // Lander is to the LEFT of the landing platform, use Right thrusters to move
         // lander to the left.
@@ -361,16 +519,16 @@ void Lander_Control(void)
         Left_Thruster(0);
         Main_Thruster(0); // Make sure we're not fighting ourselves here!
 
-        if (Velocity_X() > (-VXlim))
+        if (estVX > (-VXlim))
         {
           rotateToAngle(defaultAngle - tilt);
-          Right_Thruster((VXlim + fmin(0, Velocity_X())) / VXlim);
+          Right_Thruster((VXlim + fmin(0, estVX)) / VXlim);
         }
         else
         {
           // Exceeded velocity limit, brake
           rotateToAngle(defaultAngle + tilt);
-          Right_Thruster(fabs(VXlim - Velocity_X()));
+          Right_Thruster(fabs(VXlim - estVX));
         }
       }
       else
@@ -380,22 +538,22 @@ void Lander_Control(void)
         Left_Thruster(0);
         Main_Thruster(0); // Make sure we're not fighting ourselves here!
 
-        if (Velocity_X() < VXlim)
+        if (estVX < VXlim)
         {
           rotateToAngle(defaultAngle + tilt);
-          Right_Thruster((VXlim - fmax(0, Velocity_X())) / VXlim);
+          Right_Thruster((VXlim - fmax(0, estVX)) / VXlim);
         }
         else
         {
           rotateToAngle(defaultAngle - tilt);
-          Right_Thruster(fabs(VXlim - Velocity_X()));
+          Right_Thruster(fabs(VXlim - estVX));
         }
       }
 
       // Vertical adjustments. Basically, keep the module below the limit for
       // vertical velocity and allow for continuous descent. We trust
       // Safety_Override() to save us from crashing with the ground.
-      if (Velocity_Y() < VYlim)
+      if (estVY < VYlim)
         Right_Thruster(1.0);
       else
         Right_Thruster(0.35);
@@ -404,7 +562,7 @@ void Lander_Control(void)
     {
       // Module is oriented properly, check for horizontal position
       // and set thrusters appropriately.
-      if (Position_X() > PLAT_X)
+      if (estPX > PLAT_X)
       {
         // Lander is to the LEFT of the landing platform, use Right thrusters to move
         // lander to the left.
@@ -412,16 +570,16 @@ void Lander_Control(void)
         Right_Thruster(0);
         Main_Thruster(0); // Make sure we're not fighting ourselves here!
 
-        if (Velocity_X() > (-VXlim))
+        if (estVX > (-VXlim))
         {
           rotateToAngle(defaultAngle - tilt);
-          Left_Thruster((VXlim + fmin(0, Velocity_X())) / VXlim);
+          Left_Thruster((VXlim + fmin(0, estVX)) / VXlim);
         }
         else
         {
           // Exceeded velocity limit, brake
           rotateToAngle(defaultAngle + tilt);
-          Left_Thruster(fabs(VXlim - Velocity_X()));
+          Left_Thruster(fabs(VXlim - estVX));
         }
       }
       else
@@ -431,22 +589,22 @@ void Lander_Control(void)
         Right_Thruster(0);
         Main_Thruster(0); // Make sure we're not fighting ourselves here!
 
-        if (Velocity_X() < VXlim)
+        if (estVX < VXlim)
         {
           rotateToAngle(defaultAngle + tilt);
-          Left_Thruster((VXlim - fmax(0, Velocity_X())) / VXlim);
+          Left_Thruster((VXlim - fmax(0, estVX)) / VXlim);
         }
         else
         {
           rotateToAngle(defaultAngle - tilt);
-          Left_Thruster(fabs(VXlim - Velocity_X()));
+          Left_Thruster(fabs(VXlim - estVX));
         }
       }
 
       // Vertical adjustments. Basically, keep the module below the limit for
       // vertical velocity and allow for continuous descent. We trust
       // Safety_Override() to save us from crashing with the ground.
-      if (Velocity_Y() < VYlim)
+      if (estVY < VYlim)
         Left_Thruster(1.0);
       else
         Left_Thruster(0.35);
@@ -467,35 +625,35 @@ void Lander_Control(void)
 
     // Module is oriented properly, check for horizontal position
     // and set thrusters appropriately.
-    if (Position_X() > PLAT_X)
+    if (estPX > PLAT_X)
     {
       // Lander is to the LEFT of the landing platform, use Right thrusters to move
       // lander to the left.
       Left_Thruster(0); // Make sure we're not fighting ourselves here!
-      if (Velocity_X() > (-VXlim))
-        Right_Thruster((VXlim + fmin(0, Velocity_X())) / VXlim);
+      if (estVX > (-VXlim))
+        Right_Thruster((VXlim + fmin(0, estVX)) / VXlim);
       else
       {
         // Exceeded velocity limit, brake
         Right_Thruster(0);
-        Left_Thruster(fabs(VXlim - Velocity_X()));
+        Left_Thruster(fabs(VXlim - estVX));
       }
     }
     else
     {
       // Lander is to the RIGHT of the landing platform, opposite from above
       Right_Thruster(0);
-      if (Velocity_X() < VXlim)
-        Left_Thruster((VXlim - fmax(0, Velocity_X())) / VXlim);
+      if (estVX < VXlim)
+        Left_Thruster((VXlim - fmax(0, estVX)) / VXlim);
       else
       {
         Left_Thruster(0);
-        Right_Thruster(fabs(VXlim - Velocity_X()));
+        Right_Thruster(fabs(VXlim - estVX));
       }
       // Vertical adjustments. Basically, keep the module below the limit for
       // vertical velocity and allow for continuous descent. We trust
       // Safety_Override() to save us from crashing with the ground.
-      if (Velocity_Y() < VYlim)
+      if (estVY < VYlim)
         Main_Thruster(1.0);
       else
         Main_Thruster(0);
@@ -542,8 +700,8 @@ void Safety_Override(void)
   // Establish distance threshold based on lander
   // speed (we need more time to rectify direction
   // at high speed)
-  Vmag = Velocity_X() * Velocity_X();
-  Vmag += Velocity_Y() * Velocity_Y();
+  Vmag = estVX * estVX;
+  Vmag += estVY * estVY;
 
   DistLimit = fmax(75, Vmag);
 
@@ -551,7 +709,7 @@ void Safety_Override(void)
   // safety override (close to the landing platform
   // the Control_Policy() should be trusted to
   // safely land the craft)
-  if (fabs(PLAT_X - Position_X()) < 150 && fabs(PLAT_Y - Position_Y()) < 150)
+  if (fabs(PLAT_X - estPX) < 150 && fabs(PLAT_Y - estPY) < 150)
     return;
 
   // Determine the closest surfaces in the direction
@@ -562,7 +720,7 @@ void Safety_Override(void)
 
   // Horizontal direction.
   dmin = 1000000;
-  if (Velocity_X() > 0)
+  if (estVX > 0)
   {
     for (int i = 5; i < 14; i++)
       if (SONAR_DIST[i] > -1 && SONAR_DIST[i] < dmin)
@@ -577,12 +735,12 @@ void Safety_Override(void)
   // Determine whether we're too close for comfort. There is a reason
   // to have this distance limit modulated by horizontal speed...
   // what is it?
-  if (dmin < DistLimit * fmax(.25, fmin(fabs(Velocity_X()) / 5.0, 1)))
+  if (dmin < DistLimit * fmax(.25, fmin(fabs(estVX) / 5.0, 1)))
   { // Too close to a surface in the horizontal direction
 
     if (!MT_OK || !RT_OK || !LT_OK)
     {
-      if (Velocity_X() > 0)
+      if (estVX > 0)
       {
         if (MT_OK)
         {
@@ -624,7 +782,7 @@ void Safety_Override(void)
       // Starter code behaviour
       rotateToAngle(0);
 
-      if (Velocity_X() > 0)
+      if (estVX > 0)
       {
         Right_Thruster(1.0);
         Left_Thruster(0.0);
@@ -639,7 +797,7 @@ void Safety_Override(void)
 
   // Vertical direction
   dmin = 1000000;
-  if (Velocity_Y() > 5) // Mind this! there is a reason for it...
+  if (estVY > 5) // Mind this! there is a reason for it...
   {
     for (int i = 0; i < 5; i++)
       if (SONAR_DIST[i] > -1 && SONAR_DIST[i] < dmin)
@@ -659,7 +817,7 @@ void Safety_Override(void)
   {
     if (!MT_OK || !RT_OK || !LT_OK)
     {
-      if (Velocity_Y() > 2.0)
+      if (estVY > 2.0)
       {
         if (MT_OK)
         {
@@ -695,7 +853,7 @@ void Safety_Override(void)
       // Starter code behaviour
       rotateToAngle(0);
 
-      if (Velocity_Y() > 2.0)
+      if (estVY > 2.0)
       {
         Main_Thruster(0.0);
       }
