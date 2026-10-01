@@ -1,49 +1,49 @@
 /*
-	Lander Control simulation.
+  Lander Control simulation.
 
-	Updated by F. Estrada for CSC C85, Oct. 2013
-	Updated by Per Parker, Sep. 2015
+  Updated by F. Estrada for CSC C85, Oct. 2013
+  Updated by Per Parker, Sep. 2015
 
-	Learning goals:
+  Learning goals:
 
-	- To explore the implementation of control software
-	  that is robust to malfunctions/failures.
+  - To explore the implementation of control software
+    that is robust to malfunctions/failures.
 
-	The exercise:
+  The exercise:
 
-	- The program loads a terrain map from a .ppm file.
-	  the map shows a red platform which is the location
-	  a landing module should arrive at.
-	- The control software has to navigate the lander
-	  to this location and deposit the lander on the
-	  ground considering:
+  - The program loads a terrain map from a .ppm file.
+    the map shows a red platform which is the location
+    a landing module should arrive at.
+  - The control software has to navigate the lander
+    to this location and deposit the lander on the
+    ground considering:
 
-	  * Maximum vertical speed should be less than 10 m/s at touchdown
-	  * Maximum landing angle should be less than 15 degrees w.r.t vertical
+    * Maximum vertical speed should be less than 10 m/s at touchdown
+    * Maximum landing angle should be less than 15 degrees w.r.t vertical
 
-	- Of course, touching any part of the terrain except
-	  for the landing platform will result in destruction
-	  of the lander
+  - Of course, touching any part of the terrain except
+    for the landing platform will result in destruction
+    of the lander
 
-	This has been made into many videogames. The oldest one
-	I know of being a C64 game called 1985 The Day After.
+  This has been made into many videogames. The oldest one
+  I know of being a C64 game called 1985 The Day After.
         There are older ones! (for bonus credit, find the oldest
         one and send me a description/picture plus info about the
         platform it ran on!)
 
-	Your task:
+  Your task:
 
-	- These are the 'sensors' you have available to control
+  - These are the 'sensors' you have available to control
           the lander.
 
-	  Velocity_X();  - Gives you the lander's horizontal velocity
-	  Velocity_Y();	 - Gives you the lander's vertical velocity
-	  Position_X();  - Gives you the lander's horizontal position (0 to 1024)
-	  Position Y();  - Gives you the lander's vertical position (0 to 1024)
+    Velocity_X();  - Gives you the lander's horizontal velocity
+    Velocity_Y();	 - Gives you the lander's vertical velocity
+    Position_X();  - Gives you the lander's horizontal position (0 to 1024)
+    Position Y();  - Gives you the lander's vertical position (0 to 1024)
 
           Angle();	 - Gives the lander's angle w.r.t. vertical in DEGREES (upside-down = 180 degrees)
 
-	  SONAR_DIST[];  - Array with distances obtained by sonar. Index corresponds
+    SONAR_DIST[];  - Array with distances obtained by sonar. Index corresponds
                            to angle w.r.t. vertical direction measured clockwise, so that
                            SONAR_DIST[0] is distance at 0 degrees (pointing upward)
                            SONAR_DIST[1] is distance at 10 degrees from vertical
@@ -64,48 +64,48 @@
 
           Note: All sensors are NOISY. This makes your life more interesting.
 
-	- Variables accessible to your 'in flight' computer
+  - Variables accessible to your 'in flight' computer
 
-	  MT_OK		- Boolean, if 1 indicates the main thruster is working properly
-	  RT_OK		- Boolean, if 1 indicates the right thruster is working properly
-	  LT_OK		- Boolean, if 1 indicates thr left thruster is working properly
+    MT_OK		- Boolean, if 1 indicates the main thruster is working properly
+    RT_OK		- Boolean, if 1 indicates the right thruster is working properly
+    LT_OK		- Boolean, if 1 indicates thr left thruster is working properly
           PLAT_X	- X position of the landing platform
           PLAY_Y        - Y position of the landing platform
 
-	- Control of the lander is via the following functions
+  - Control of the lander is via the following functions
           (which are noisy!)
 
-	  Main_Thruster(double power);   - Sets main thurster power in [0 1], 0 is off
-	  Left_Thruster(double power);	 - Sets left thruster power in [0 1]
-	  Right_Thruster(double power);  - Sets right thruster power in [0 1]
-	  Rotate(double angle);	 	 - Rotates module 'angle' degrees clockwise
-					   (ccw if angle is negative) from current
+    Main_Thruster(double power);   - Sets main thurster power in [0 1], 0 is off
+    Left_Thruster(double power);	 - Sets left thruster power in [0 1]
+    Right_Thruster(double power);  - Sets right thruster power in [0 1]
+    Rotate(double angle);	 	 - Rotates module 'angle' degrees clockwise
+             (ccw if angle is negative) from current
                                            orientation (i.e. rotation is not w.r.t.
                                            a fixed reference direction).
 
- 					   Note that rotation takes time!
+             Note that rotation takes time!
 
 
-	- Important constants
+  - Important constants
 
-	  G_ACCEL = 8.87	- Gravitational acceleration on Venus
-	  MT_ACCEL = 35.0	- Max acceleration provided by the main thruster
-	  RT_ACCEL = 25.0	- Max acceleration provided by right thruster
-	  LT_ACCEL = 25.0	- Max acceleration provided by left thruster
+    G_ACCEL = 8.87	- Gravitational acceleration on Venus
+    MT_ACCEL = 35.0	- Max acceleration provided by the main thruster
+    RT_ACCEL = 25.0	- Max acceleration provided by right thruster
+    LT_ACCEL = 25.0	- Max acceleration provided by left thruster
           MAX_ROT_RATE = .075    - Maximum rate of rotation (in radians) per unit time
 
-	- Functions you need to analyze and possibly change
+  - Functions you need to analyze and possibly change
 
-	  * The Lander_Control(); function, which determines where the lander should
-	    go next and calls control functions
+    * The Lander_Control(); function, which determines where the lander should
+      go next and calls control functions
           * The Safety_Override(); function, which determines whether the lander is
             in danger of crashing, and calls control functions to prevent this.
 
-	- You *can* add your own helper functions (e.g. write a robust thruster
-	  handler, or your own robust sensor functions - of course, these must
-	  use the noisy and possibly faulty ones!).
+  - You *can* add your own helper functions (e.g. write a robust thruster
+    handler, or your own robust sensor functions - of course, these must
+    use the noisy and possibly faulty ones!).
 
-	- The rest is a black box... life sometimes is like that.
+  - The rest is a black box... life sometimes is like that.
 
         - Program usage: The program is designed to simulate different failure
                          scenarios. Mode '1' allows for failures in the
@@ -114,17 +114,17 @@
                          that allows you to test your code against specific
                          component failures.
 
-			 Initial lander position, orientation, and velocity are
+       Initial lander position, orientation, and velocity are
                          randomized.
 
-	  * The code I am providing will land the module assuming nothing goes wrong
+    * The code I am providing will land the module assuming nothing goes wrong
           with the sensors and/or controls, both for the 'easy.ppm' and 'hard.ppm'
           maps.
 
-	  * Failure modes: 0 - Nothing ever fails, life is simple
-			   1 - Controls can fail, sensors are always reliable
-			   2 - Both controls and sensors can fail (and do!)
-			   3 - Selectable failure mode, remaining arguments determine
+    * Failure modes: 0 - Nothing ever fails, life is simple
+         1 - Controls can fail, sensors are always reliable
+         2 - Both controls and sensors can fail (and do!)
+         3 - Selectable failure mode, remaining arguments determine
                                failing component(s):
                                1 - Main thruster
                                2 - Left Thruster
@@ -143,266 +143,767 @@
              Launches the program on the 'easy.ppm' map, and disables the main thruster,
              vertical velocity sensor, and angle sensor.
 
-		* Note - while running. Pressing 'q' on the keyboard terminates the 
-			program.
+    * Note - while running. Pressing 'q' on the keyboard terminates the
+      program.
 
         * Be sure to complete the attached REPORT.TXT and submit the report as well as
           your code by email. Subject should be 'C85 Safe Landings, name_of_your_team'
 
-	Have fun! try not to crash too many landers, they are expensive!
+  Have fun! try not to crash too many landers, they are expensive!
 
-  	Credits: Lander image and rocky texture provided by NASA
-		 Per Parker spent some time making sure you will have fun! thanks Per!
+    Credits: Lander image and rocky texture provided by NASA
+     Per Parker spent some time making sure you will have fun! thanks Per!
 */
 
 /*
   Standard C libraries
 */
 #include <math.h>
-
+#include <stdio.h>
 #include "Lander_Control.h"
+
+#define VSAMPLES 10 // Number of sample readings
+#define PSAMPLES 40 // Samples for position as its more noisy
+#define DT 0.03      // Assumed time per iteration - (im assuming each iteration is one second)
+#define MAX_RANGE_V 6.0 // maximum ranges / differences between velocity readings
+#define MAX_RANGE_P 45.0 // same as above for position
+#define MIN_AGREE_SCORE 0.7 // the percent of sample reading that are within range / agree on that reading
+#define MAX_GAP_V 12.0     // Maximum gap between two Velocity readings for them to agree
+#define MAX_GAP_P 30.0    // same as above for Position
+
+double sVX[VSAMPLES], sVY[VSAMPLES], sPX[PSAMPLES], sPY[PSAMPLES]; // Arrays to track samples  V-Velocity P-Position
+double estVX = 0, estVY = 0, estPX = 0, estPY = 0;      // final estimated and noise-reduced readings
+int started=0; // counting iterations
+
+// This function logs the latest sample at the end of the array of samples when called
+void logSamples(double *samples,int n, double reading){ // n is number of samples
+  for(int i=0; i <n - 1; i++){
+    samples[i]= samples[i+1];
+  }
+  samples[n-1]=reading;
+}
+
+// This is to fill the samples array the first time to avoid any empty indexes later on
+void fillSamples(double *samples, int n, double reading){
+  for(int i=0; i < n; i++){
+    samples[i]= reading;
+  }
+}
+
+// This hlper finds the largest group of samples from the total samples with
+// similar / close readings and returns the average of those readings while filtering out any bad cases
+double averageReading(double *samples, int n, double gap, double range, double *agree){
+  double a[PSAMPLES];
+  for (int i = 0; i < n; i++){                // This is aligning the samples based on which iteration = index it happend
+    a[i] = samples[i] + gap * (n - 1 - i);  // This acounts for having changes in readings in each iteration and
+  }                                                // this makes sure old readings are not messing with average
+
+    int bestCount = 0;
+    int index = 0;
+
+    for (int i = 0; i < n; i++){   // This is calculating the mode of the readings
+      int count = 0;                     // Iterating through sample readings and comparing to find the most occuring reading
+      for (int j = 0; j < n; j++)
+        if (fabs(a[j] - a[i]) <= range){
+          count++;
+        }
+      if (count > bestCount){
+        bestCount = count;
+        index = i;
+      }
+    }
+    double sum = 0; //sum of readings that are close
+    int m = 0; // number of readings that are close
+    for(int i=0; i<n ; i++){
+      if(fabs(a[i] - a[index]) <= range){
+        sum+=a[i];
+        m++;
+      }
+    }
+  *agree = (double)m / n; // percentange of samples that similar readings
+  return sum / m;
+}
+// Calculates the change of position for velocity
+double changeInP(double *samples, int n){
+  int k = n/4;
+  double oldAvg = 0;
+  double newAvg = 0;
+  for (int i = 0; i < k; i++){
+    oldAvg += samples[i];          // get average of older samples     // this is for redundancy
+    newAvg += samples[n-1-i];     // average of newer samples
+  }
+  oldAvg = oldAvg / k;
+  newAvg = newAvg / k;
+  return (newAvg - oldAvg)/((n-k)*DT);     // redundant velocity calculation from position  (v=d/t)
+}
+
+//helper to get the closest value
+double closest(double a, double b, double ref){
+  if(fabs(a-ref) <= fabs(b-ref)){
+    return a;
+  }
+  return b;
+}
+
+// Estimates and returns a position and uses *ok for if its good or bas estimate
+double combinePosition(double *samples, double direction, double velocity, double prev, int *ok){
+  double agree;
+  double mean = averageReading(samples, PSAMPLES, direction*velocity*DT, MAX_RANGE_P, &agree);
+  double predicted = prev + direction*velocity*DT;
+  if((agree >= MIN_AGREE_SCORE) && (fabs(mean - predicted) <= MAX_GAP_P)){   // SENSOR is correct if the percentage of similar samples is in range
+    *ok = 1;                                                                 // and the avg position is close enough to the estimated prosition based on velocity
+  }
+  else{
+    *ok=0;
+  }
+  return mean;
+}
+double combineVelocity(double *samplesV, double *samplesP, double direction, double prev, int pOk){
+  double agree;
+  double velMean = averageReading(samplesV, VSAMPLES, 0.0, MAX_RANGE_V, &agree);
+  int vOk = 0;
+  if (agree >= MIN_AGREE_SCORE){  // check if enough percent of velocity readings give similar results
+    vOk = 1;
+  }
+  double velP = direction * changeInP(samplesP, PSAMPLES); // getting velocity from position samples
+  if(vOk && pOk){
+    if(fabs(velMean - velP) <= MAX_GAP_V){ // both of the calculated velocities are close
+      return velMean;
+    }
+    return closest(velMean, velP, prev);  // return closest to previous reading
+  }
+  if(vOk) return velMean;
+  if(pOk) return velP;
+  return(prev);          // if neither position or velocity accurately calculates velocity, return previous velocyt reading
+  // MAY NEED TO CHANGE
+}
+ void redundantSensor(void){
+
+  if(!started){
+    estVX = Velocity_X();
+    estVY = Velocity_Y();
+    estPX = Position_X();
+    estPY = Position_Y();
+    fillSamples(sVX, VSAMPLES, estVX);
+    fillSamples(sVY, VSAMPLES, estVY);
+    fillSamples(sPX, PSAMPLES, estPX);
+    fillSamples(sPY, PSAMPLES, estPY);
+    started=1;
+    return;
+  }
+  logSamples(sVX, VSAMPLES, Velocity_X());
+  logSamples(sVY, VSAMPLES, Velocity_Y());
+  logSamples(sPX, PSAMPLES, Position_X());
+  logSamples(sPY, PSAMPLES, Position_Y());
+
+
+  int okX; // if position sensors reading are accurate
+  int okY;
+  double pX = combinePosition(sPX, 1.0, estVX, estPX, &okX); // calculated positions
+  double pY = combinePosition(sPY, -1.0, estVY, estPY, &okY);
+
+  estVX = combineVelocity(sVX, sPX, 1.0, estVX, okX);
+  estVY = combineVelocity(sVY, sPY, -1.0, estVY, okY);
+
+  if(okX){
+    estPX = pX;
+  }
+  else{
+    estPX = estPX + estVX * DT;
+  }
+
+  if(okY){
+    estPY = pY;
+  }
+  else{
+    estPY = estPY - estVY * DT;
+  }
+ }
+// Helper fn to rotate the lander to target angle
+void rotateToAngle(double target)
+{
+  double diff = target - Angle();
+
+  if (fabs(diff) > 1.0)
+  {
+    if (diff > 180.0)
+      Rotate(diff - 360.0);
+    else if (diff < -180.0)
+      Rotate(diff + 360.0);
+    else
+      Rotate(diff);
+  }
+}
+
+double getDefaultAngle(void)
+{
+  if (MT_OK)
+  {
+    return 0.0;
+  }
+  else if (RT_OK)
+  {
+    return 90.0;
+  }
+  else
+  {
+    return 270.0;
+  }
+}
+
+bool SonarFailed()
+{
+  for (int i = 0; i < 36; i++)
+  {
+    if (SONAR_DIST[i] == -1)
+      return true;
+  }
+
+  return false;
+}
+
+double GetMinDistanceViaRangeFinder(double defaultAngle, double tilt)
+{
+  double dmin = 1000000;
+
+  rotateToAngle(defaultAngle + tilt);
+  double distPlus = RangeDist();
+
+  rotateToAngle(defaultAngle - tilt);
+  double distMinus = RangeDist();
+
+  rotateToAngle(defaultAngle);
+
+  dmin = fmin(distPlus, distMinus);
+
+  return dmin;
+}
 
 void Lander_Control(void)
 {
- /*
-   This is the main control function for the lander. It attempts
-   to bring the ship to the location of the landing platform
-   keeping landing parameters within the acceptable limits.
+  /*
+    This is the main control function for the lander. It attempts
+    to bring the ship to the location of the landing platform
+    keeping landing parameters within the acceptable limits.
 
-   How it works:
+    How it works:
 
-   - First, if the lander is rotated away from zero-degree angle,
-     rotate lander back onto zero degrees.
-   - Determine the horizontal distance between the lander and
-     the platform, fire horizontal thrusters appropriately
-     to change the horizontal velocity so as to decrease this
-     distance
-   - Determine the vertical distance to landing platform, and
-     allow the lander to descend while keeping the vertical
-     speed within acceptable bounds. Make sure that the lander
-     will not hit the ground before it is over the platform!
+    - First, if the lander is rotated away from zero-degree angle,
+      rotate lander back onto zero degrees.
+    - Determine the horizontal distance between the lander and
+      the platform, fire horizontal thrusters appropriately
+      to change the horizontal velocity so as to decrease this
+      distance
+    - Determine the vertical distance to landing platform, and
+      allow the lander to descend while keeping the vertical
+      speed within acceptable bounds. Make sure that the lander
+      will not hit the ground before it is over the platform!
 
-   As noted above, this function assumes everything is working
-   fine.
-*/
+    As noted above, this function assumes everything is working
+    fine.
+ */
 
-/*************************************************
- TO DO: Modify this function so that the ship safely
-        reaches the platform even if components and
-        sensors fail!
+  /*************************************************
+   TO DO: Modify this function so that the ship safely
+          reaches the platform even if components and
+          sensors fail!
 
-        Note that sensors are noisy, even when
-        working properly.
+          Note that sensors are noisy, even when
+          working properly.
 
-        Finally, YOU SHOULD provide your own
-        functions to provide sensor readings,
-        these functions should work even when the
-        sensors are faulty.
+          Finally, YOU SHOULD provide your own
+          functions to provide sensor readings,
+          these functions should work even when the
+          sensors are faulty.
 
-        For example: Write a function Velocity_X_robust()
-        which returns the module's horizontal velocity.
-        It should determine whether the velocity
-        sensor readings are accurate, and if not,
-        use some alternate method to determine the
-        horizontal velocity of the lander.
+          For example: Write a function Velocity_X_robust()
+          which returns the module's horizontal velocity.
+          It should determine whether the velocity
+          sensor readings are accurate, and if not,
+          use some alternate method to determine the
+          horizontal velocity of the lander.
 
-        NOTE: Your robust sensor functions can only
-        use the available sensor functions and control
-        functions!
-	DO NOT WRITE SENSOR FUNCTIONS THAT DIRECTLY
-        ACCESS THE SIMULATION STATE. That's cheating,
-        I'll give you zero.
-**************************************************/
+          NOTE: Your robust sensor functions can only
+          use the available sensor functions and control
+          functions!
+    DO NOT WRITE SENSOR FUNCTIONS THAT DIRECTLY
+          ACCESS THE SIMULATION STATE. That's cheating,
+          I'll give you zero.
+  **************************************************/
 
- double VXlim;
- double VYlim;
+  double VXlim;
+  double VYlim;
+  double defaultAngle = getDefaultAngle();
+  double tilt;
 
- // Set velocity limits depending on distance to platform.
- // If the module is far from the platform allow it to
- // move faster, decrease speed limits as the module
- // approaches landing. You may need to be more conservative
- // with velocity limits when things fail.
- if (fabs(Position_X()-PLAT_X)>200) VXlim=25;
- else if (fabs(Position_X()-PLAT_X)>100) VXlim=15;
- else VXlim=5;
+  redundantSensor();
+  // Set velocity limits depending on distance to platform.
+  // If the module is far from the platform allow it to
+  // move faster, decrease speed limits as the module
+  // approaches landing. You may need to be more conservative
+  // with velocity limits when things fail.
+  if (fabs(estPX - PLAT_X) > 200)
+    VXlim = 25;
+  else if (fabs(estPX - PLAT_X) > 100)
+    VXlim = 15;
+  else
+    VXlim = 5;
 
- if (PLAT_Y-Position_Y()>200) VYlim=-20;
- else if (PLAT_Y-Position_Y()>100) VYlim=-10;  // These are negative because they
- else VYlim=-4;				       // limit descent velocity
+  if (fabs(estPX - PLAT_X) > 200)
+    tilt = 30;
+  else if (fabs(estPX - PLAT_X) > 100)
+    tilt = 25;
+  else
+    tilt = 15;
 
- // Ensure we will be OVER the platform when we land
- if (fabs(PLAT_X-Position_X())/fabs(Velocity_X())>1.25*fabs(PLAT_Y-Position_Y())/fabs(Velocity_Y())) VYlim=0;
+  if (PLAT_Y - estPY > 200)
+    VYlim = -20;
+  else if (PLAT_Y - estPY > 100)
+    VYlim = -10; // These are negative because they
+  else
+    VYlim = -4; // limit descent velocity
 
- // IMPORTANT NOTE: The code below assumes all components working
- // properly. IT MAY OR MAY NOT BE USEFUL TO YOU when components
- // fail. More likely, you will need a set of case-based code
- // chunks, each of which works under particular failure conditions.
+  // Ensure we will be OVER the platform when we land
+  if (fabs(PLAT_X - estPX) / fabs(estVX) > 1.25 * fabs(PLAT_Y - estPY) / fabs(estVY))
+    VYlim = 0;
 
- // Check for rotation away from zero degrees - Rotate first,
- // use thrusters only when not rotating to avoid adding
- // velocity components along the rotation directions
- // Note that only the latest Rotate() command has any
- // effect, i.e. the rotation angle does not accumulate
- // for successive calls.
+  // IMPORTANT NOTE: The code below assumes all components working
+  // properly. IT MAY OR MAY NOT BE USEFUL TO YOU when components
+  // fail. More likely, you will need a set of case-based code
+  // chunks, each of which works under particular failure conditions.
 
- if (Angle()>1&&Angle()<359)
- {
-  if (Angle()>=180) Rotate(360-Angle());
-  else Rotate(-Angle());
-  return;
- }
+  if (!MT_OK || !RT_OK || !LT_OK)
+  {
 
- // Module is oriented properly, check for horizontal position
- // and set thrusters appropriately.
- if (Position_X()>PLAT_X)
- {
-  // Lander is to the LEFT of the landing platform, use Right thrusters to move
-  // lander to the left.
-  Left_Thruster(0);	// Make sure we're not fighting ourselves here!
-  if (Velocity_X()>(-VXlim)) Right_Thruster((VXlim+fmin(0,Velocity_X()))/VXlim);
+    if (fabs(PLAT_X - estPX) < 20 && fabs(PLAT_Y - estPY) < 35)
+    {
+      Main_Thruster(0);
+      Right_Thruster(0);
+      Left_Thruster(0);
+      rotateToAngle(0);
+      return;
+    }
+
+    if (MT_OK)
+    {
+      // Module is oriented properly, check for horizontal position
+      // and set thrusters appropriately.
+      if (estPX > PLAT_X)
+      {
+        // Lander is to the RIGHT of the landing platform, use Right thrusters to move
+        // lander to the left.
+
+        Left_Thruster(0);
+        Right_Thruster(0); // Make sure we're not fighting ourselves here!
+
+        if (estVX > (-VXlim))
+        {
+          rotateToAngle(defaultAngle - tilt);
+          Main_Thruster((VXlim + fmin(0, estVX)) / VXlim);
+        }
+        else
+        {
+          // Exceeded velocity limit, brake
+          rotateToAngle(defaultAngle + tilt);
+          Main_Thruster(fabs(VXlim - estVX));
+        }
+      }
+      else
+      {
+        // Lander is to the LEFT of the landing platform, opposite from above
+
+        Left_Thruster(0);
+        Right_Thruster(0); // Make sure we're not fighting ourselves here!
+
+        if (estVX < VXlim)
+        {
+          rotateToAngle(defaultAngle + tilt);
+          Main_Thruster((VXlim - fmax(0, estVX)) / VXlim);
+        }
+        else
+        {
+          rotateToAngle(defaultAngle - tilt);
+          Main_Thruster(fabs(VXlim - estVX));
+        }
+      }
+
+      // Vertical adjustments. Basically, keep the module below the limit for
+      // vertical velocity and allow for continuous descent. We trust
+      // Safety_Override() to save us from crashing with the ground.
+      if (estVY < VYlim)
+        Main_Thruster(1.0);
+      else
+        Main_Thruster(0.2);
+    }
+    else if (RT_OK)
+    {
+      // Module is oriented properly, check for horizontal position
+      // and set thrusters appropriately.
+      if (estPX > PLAT_X)
+      {
+        // Lander is to the LEFT of the landing platform, use Right thrusters to move
+        // lander to the left.
+
+        Left_Thruster(0);
+        Main_Thruster(0); // Make sure we're not fighting ourselves here!
+
+        if (estVX > (-VXlim))
+        {
+          rotateToAngle(defaultAngle - tilt);
+          Right_Thruster((VXlim + fmin(0, estVX)) / VXlim);
+        }
+        else
+        {
+          // Exceeded velocity limit, brake
+          rotateToAngle(defaultAngle + tilt);
+          Right_Thruster(fabs(VXlim - estVX));
+        }
+      }
+      else
+      {
+        // Lander is to the RIGHT of the landing platform, opposite from above
+
+        Left_Thruster(0);
+        Main_Thruster(0); // Make sure we're not fighting ourselves here!
+
+        if (estVX < VXlim)
+        {
+          rotateToAngle(defaultAngle + tilt);
+          Right_Thruster((VXlim - fmax(0, estVX)) / VXlim);
+        }
+        else
+        {
+          rotateToAngle(defaultAngle - tilt);
+          Right_Thruster(fabs(VXlim - estVX));
+        }
+      }
+
+      // Vertical adjustments. Basically, keep the module below the limit for
+      // vertical velocity and allow for continuous descent. We trust
+      // Safety_Override() to save us from crashing with the ground.
+      if (estVY < VYlim)
+        Right_Thruster(1.0);
+      else
+        Right_Thruster(0.35);
+    }
+    else
+    {
+      // Module is oriented properly, check for horizontal position
+      // and set thrusters appropriately.
+      if (estPX > PLAT_X)
+      {
+        // Lander is to the LEFT of the landing platform, use Right thrusters to move
+        // lander to the left.
+
+        Right_Thruster(0);
+        Main_Thruster(0); // Make sure we're not fighting ourselves here!
+
+        if (estVX > (-VXlim))
+        {
+          rotateToAngle(defaultAngle - tilt);
+          Left_Thruster((VXlim + fmin(0, estVX)) / VXlim);
+        }
+        else
+        {
+          // Exceeded velocity limit, brake
+          rotateToAngle(defaultAngle + tilt);
+          Left_Thruster(fabs(VXlim - estVX));
+        }
+      }
+      else
+      {
+        // Lander is to the RIGHT of the landing platform, opposite from above
+
+        Right_Thruster(0);
+        Main_Thruster(0); // Make sure we're not fighting ourselves here!
+
+        if (estVX < VXlim)
+        {
+          rotateToAngle(defaultAngle + tilt);
+          Left_Thruster((VXlim - fmax(0, estVX)) / VXlim);
+        }
+        else
+        {
+          rotateToAngle(defaultAngle - tilt);
+          Left_Thruster(fabs(VXlim - estVX));
+        }
+      }
+
+      // Vertical adjustments. Basically, keep the module below the limit for
+      // vertical velocity and allow for continuous descent. We trust
+      // Safety_Override() to save us from crashing with the ground.
+      if (estVY < VYlim)
+        Left_Thruster(1.0);
+      else
+        Left_Thruster(0.35);
+    }
+  }
   else
   {
-   // Exceeded velocity limit, brake
-   Right_Thruster(0);
-   Left_Thruster(fabs(VXlim-Velocity_X()));
-  }
- }
- else
- {
-  // Lander is to the RIGHT of the landing platform, opposite from above
-  Right_Thruster(0);
-  if (Velocity_X()<VXlim) Left_Thruster((VXlim-fmax(0,Velocity_X()))/VXlim);
-  else
-  {
-   Left_Thruster(0);
-   Right_Thruster(fabs(VXlim-Velocity_X()));
-  }
- }
+    // This is just the starter code
 
- // Vertical adjustments. Basically, keep the module below the limit for
- // vertical velocity and allow for continuous descent. We trust
- // Safety_Override() to save us from crashing with the ground.
- if (Velocity_Y()<VYlim) Main_Thruster(1.0);
- else Main_Thruster(0);
+    if (Angle() > 1 && Angle() < 359)
+    {
+      if (Angle() >= 180)
+        Rotate(360 - Angle());
+      else
+        Rotate(-Angle());
+      return;
+    }
+
+    // Module is oriented properly, check for horizontal position
+    // and set thrusters appropriately.
+    if (estPX > PLAT_X)
+    {
+      // Lander is to the LEFT of the landing platform, use Right thrusters to move
+      // lander to the left.
+      Left_Thruster(0); // Make sure we're not fighting ourselves here!
+      if (estVX > (-VXlim))
+        Right_Thruster((VXlim + fmin(0, estVX)) / VXlim);
+      else
+      {
+        // Exceeded velocity limit, brake
+        Right_Thruster(0);
+        Left_Thruster(fabs(VXlim - estVX));
+      }
+    }
+    else
+    {
+      // Lander is to the RIGHT of the landing platform, opposite from above
+      Right_Thruster(0);
+      if (estVX < VXlim)
+        Left_Thruster((VXlim - fmax(0, estVX)) / VXlim);
+      else
+      {
+        Left_Thruster(0);
+        Right_Thruster(fabs(VXlim - estVX));
+      }
+      // Vertical adjustments. Basically, keep the module below the limit for
+      // vertical velocity and allow for continuous descent. We trust
+      // Safety_Override() to save us from crashing with the ground.
+      if (estVY < VYlim)
+        Main_Thruster(1.0);
+      else
+        Main_Thruster(0);
+    }
+  }
 }
 
 void Safety_Override(void)
 {
- /*
-   This function is intended to keep the lander from
-   crashing. It checks the sonar distance array,
-   if the distance to nearby solid surfaces and
-   uses thrusters to maintain a safe distance from
-   the ground unless the ground happens to be the
-   landing platform.
+  /*
+    This function is intended to keep the lander from
+    crashing. It checks the sonar distance array,
+    if the distance to nearby solid surfaces and
+    uses thrusters to maintain a safe distance from
+    the ground unless the ground happens to be the
+    landing platform.
 
-   Additionally, it enforces a maximum speed limit
-   which when breached triggers an emergency brake
-   operation.
- */
+    Additionally, it enforces a maximum speed limit
+    which when breached triggers an emergency brake
+    operation.
+  */
 
-/**************************************************
- TO DO: Modify this function so that it can do its
-        work even if components or sensors
-        fail
-**************************************************/
+  /**************************************************
+   TO DO: Modify this function so that it can do its
+          work even if components or sensors
+          fail
+  **************************************************/
 
-/**************************************************
-  How this works:
-  Check the sonar readings, for each sonar
-  reading that is below a minimum safety threshold
-  AND in the general direction of motion AND
-  not corresponding to the landing platform,
-  carry out speed corrections using the thrusters
-**************************************************/
+  /**************************************************
+    How this works:
+    Check the sonar readings, for each sonar
+    reading that is below a minimum safety threshold
+    AND in the general direction of motion AND
+    not corresponding to the landing platform,
+    carry out speed corrections using the thrusters
+  **************************************************/
 
- double DistLimit;
- double Vmag;
- double dmin;
+  double DistLimit;
+  double Vmag;
+  double dmin;
+  double defaultAngle = getDefaultAngle();
+  double tilt = 60;
 
- // Establish distance threshold based on lander
- // speed (we need more time to rectify direction
- // at high speed)
- Vmag=Velocity_X()*Velocity_X();
- Vmag+=Velocity_Y()*Velocity_Y();
+  // Establish distance threshold based on lander
+  // speed (we need more time to rectify direction
+  // at high speed)
+  Vmag = estVX * estVX;
+  Vmag += estVY * estVY;
 
- DistLimit=fmax(75,Vmag);
+  DistLimit = fmax(75, Vmag);
 
- // If we're close to the landing platform, disable
- // safety override (close to the landing platform
- // the Control_Policy() should be trusted to
- // safely land the craft)
- if (fabs(PLAT_X-Position_X())<150&&fabs(PLAT_Y-Position_Y())<150) return;
+  // If we're close to the landing platform, disable
+  // safety override (close to the landing platform
+  // the Control_Policy() should be trusted to
+  // safely land the craft)
+  if (fabs(PLAT_X - estPX) < 150 && fabs(PLAT_Y - estPY) < 150)
+    return;
 
- // Determine the closest surfaces in the direction
- // of motion. This is done by checking the sonar
- // array in the quadrant corresponding to the
- // ship's motion direction to find the entry
- // with the smallest registered distance
+  // Determine the closest surfaces in the direction
+  // of motion. This is done by checking the sonar
+  // array in the quadrant corresponding to the
+  // ship's motion direction to find the entry
+  // with the smallest registered distance
 
- // Horizontal direction.
- dmin=1000000;
- if (Velocity_X()>0)
- {
-  for (int i=5;i<14;i++)
-   if (SONAR_DIST[i]>-1&&SONAR_DIST[i]<dmin) dmin=SONAR_DIST[i];
- }
- else
- {
-  for (int i=22;i<32;i++)
-   if (SONAR_DIST[i]>-1&&SONAR_DIST[i]<dmin) dmin=SONAR_DIST[i];
- }
- // Determine whether we're too close for comfort. There is a reason
- // to have this distance limit modulated by horizontal speed...
- // what is it?
- if (dmin<DistLimit*fmax(.25,fmin(fabs(Velocity_X())/5.0,1)))
- { // Too close to a surface in the horizontal direction
-  if (Angle()>1&&Angle()<359)
+  // Horizontal direction.
+  dmin = 1000000;
+  if (SonarFailed())
   {
-   if (Angle()>=180) Rotate(360-Angle());
-   else Rotate(-Angle());
-   return;
-  }
-
-  if (Velocity_X()>0){
-   Right_Thruster(1.0);
-   Left_Thruster(0.0);
+    dmin = GetMinDistanceViaRangeFinder(defaultAngle, 45);
   }
   else
   {
-   Left_Thruster(1.0);
-   Right_Thruster(0.0);
+    if (estVX > 0)
+    {
+      for (int i = 5; i < 14; i++)
+        if (SONAR_DIST[i] > -1 && SONAR_DIST[i] < dmin)
+          dmin = SONAR_DIST[i];
+    }
+    else
+    {
+      for (int i = 22; i < 32; i++)
+        if (SONAR_DIST[i] > -1 && SONAR_DIST[i] < dmin)
+          dmin = SONAR_DIST[i];
+    }
   }
- }
 
- // Vertical direction
- dmin=1000000;
- if (Velocity_Y()>5)      // Mind this! there is a reason for it...
- {
-  for (int i=0; i<5; i++)
-   if (SONAR_DIST[i]>-1&&SONAR_DIST[i]<dmin) dmin=SONAR_DIST[i];
-  for (int i=32; i<36; i++)
-   if (SONAR_DIST[i]>-1&&SONAR_DIST[i]<dmin) dmin=SONAR_DIST[i];
- }
- else
- {
-  for (int i=14; i<22; i++)
-   if (SONAR_DIST[i]>-1&&SONAR_DIST[i]<dmin) dmin=SONAR_DIST[i];
- }
- if (dmin<DistLimit)   // Too close to a surface in the horizontal direction
- {
-  if (Angle()>1||Angle()>359)
-  {
-   if (Angle()>=180) Rotate(360-Angle());
-   else Rotate(-Angle());
-   return;
+  // Determine whether we're too close for comfort. There is a reason
+  // to have this distance limit modulated by horizontal speed...
+  // what is it?
+  if (dmin < DistLimit * fmax(.25, fmin(fabs(estVX) / 5.0, 1)))
+  { // Too close to a surface in the horizontal direction
+
+    if (!MT_OK || !RT_OK || !LT_OK)
+    {
+      if (estVX > 0)
+      {
+        if (MT_OK)
+        {
+          rotateToAngle(defaultAngle - tilt);
+          Main_Thruster(1.0);
+        }
+        else if (RT_OK)
+        {
+          rotateToAngle(defaultAngle - tilt);
+          Right_Thruster(1.0);
+        }
+        else
+        {
+          rotateToAngle(defaultAngle - tilt);
+          Left_Thruster(1.0);
+        }
+      }
+      else
+      {
+        if (MT_OK)
+        {
+          rotateToAngle(defaultAngle + tilt);
+          Main_Thruster(1.0);
+        }
+        else if (RT_OK)
+        {
+          rotateToAngle(defaultAngle + tilt);
+          Right_Thruster(1.0);
+        }
+        else
+        {
+          rotateToAngle(defaultAngle + tilt);
+          Left_Thruster(1.0);
+        }
+      }
+    }
+    else
+    {
+      // Starter code behaviour
+      rotateToAngle(0);
+
+      if (estVX > 0)
+      {
+        Right_Thruster(1.0);
+        Left_Thruster(0.0);
+      }
+      else
+      {
+        Left_Thruster(1.0);
+        Right_Thruster(0.0);
+      }
+    }
   }
-  if (Velocity_Y()>2.0){
-   Main_Thruster(0.0);
+
+  // Vertical direction
+  dmin = 1000000;
+  if (SonarFailed())
+  {
+    dmin = GetMinDistanceViaRangeFinder(defaultAngle, 20);
   }
   else
   {
-   Main_Thruster(1.0);
+    if (estVY > 5) // Mind this! there is a reason for it...
+    {
+      for (int i = 0; i < 5; i++)
+        if (SONAR_DIST[i] > -1 && SONAR_DIST[i] < dmin)
+          dmin = SONAR_DIST[i];
+      for (int i = 32; i < 36; i++)
+        if (SONAR_DIST[i] > -1 && SONAR_DIST[i] < dmin)
+          dmin = SONAR_DIST[i];
+    }
+    else
+    {
+      for (int i = 14; i < 22; i++)
+        if (SONAR_DIST[i] > -1 && SONAR_DIST[i] < dmin)
+          dmin = SONAR_DIST[i];
+    }
   }
- }
+
+  if (dmin < DistLimit) // Too close to a surface in the vertical direction
+  {
+    if (!MT_OK || !RT_OK || !LT_OK)
+    {
+      if (estVY > 2.0)
+      {
+        if (MT_OK)
+        {
+          Main_Thruster(0.0);
+        }
+        else if (RT_OK)
+        {
+          Right_Thruster(0.0);
+        }
+        else
+        {
+          Left_Thruster(0.0);
+        }
+      }
+      else
+      {
+        if (MT_OK)
+        {
+          Main_Thruster(1.0);
+        }
+        else if (RT_OK)
+        {
+          Right_Thruster(1.0);
+        }
+        else
+        {
+          Left_Thruster(1.0);
+        }
+      }
+    }
+    else
+    {
+      // Starter code behaviour
+      rotateToAngle(0);
+
+      if (estVY > 2.0)
+      {
+        Main_Thruster(0.0);
+      }
+      else
+      {
+        Main_Thruster(1.0);
+      }
+    }
+  }
 }
