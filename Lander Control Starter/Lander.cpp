@@ -740,6 +740,30 @@ void Safety_Override(void)
   if (fabs(PLAT_X - estPX) < 150 && fabs(PLAT_Y - estPY) < 150)
     return;
 
+printf("%f\n", Position_Y());
+
+if (estPY < 20) {
+  if (!MT_OK || !RT_OK || !LT_OK)
+  {
+    if (MT_OK)
+    {
+      Main_Thruster(0);
+    }
+    else if (RT_OK)
+    {
+      Right_Thruster(0);
+    }
+    else
+    {
+      Left_Thruster(0);
+    }
+  }
+  else
+  {
+    Main_Thruster(0);
+  }
+}
+
   // Determine the closest surfaces in the direction
   // of motion. This is done by checking the sonar
   // array in the quadrant corresponding to the
