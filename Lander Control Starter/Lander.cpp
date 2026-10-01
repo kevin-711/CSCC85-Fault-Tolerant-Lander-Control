@@ -171,14 +171,14 @@
 #define MAX_GAP_V 12.0     // Maximum gap between two Velocity readings for them to agree
 #define MAX_GAP_P 30.0    // same as above for Position
 
-double sVX[VSAMPLES], sVY[VSAMPLES], sPX[PSAMPLES], sPY[PSAMPLES]; // Arrays to track samples  V-Velocity P-Position 
+double sVX[VSAMPLES], sVY[VSAMPLES], sPX[PSAMPLES], sPY[PSAMPLES]; // Arrays to track samples  V-Velocity P-Position
 double estVX = 0, estVY = 0, estPX = 0, estPY = 0;      // final estimated and noise-reduced readings
 int started=0; // counting iterations
 
 // This function logs the latest sample at the end of the array of samples when called
 void logSamples(double *samples,int n, double reading){ // n is number of samples
   for(int i=0; i <n - 1; i++){
-    samples[i]= samples[i+1];  
+    samples[i]= samples[i+1];
   }
   samples[n-1]=reading;
 }
@@ -186,11 +186,11 @@ void logSamples(double *samples,int n, double reading){ // n is number of sample
 // This is to fill the samples array the first time to avoid any empty indexes later on
 void fillSamples(double *samples, int n, double reading){
   for(int i=0; i < n; i++){
-    samples[i]= reading;  
+    samples[i]= reading;
   }
 }
 
-// This hlper finds the largest group of samples from the total samples with 
+// This hlper finds the largest group of samples from the total samples with
 // similar / close readings and returns the average of those readings while filtering out any bad cases
 double averageReading(double *samples, int n, double gap, double range, double *agree){
   double a[PSAMPLES];
@@ -200,16 +200,16 @@ double averageReading(double *samples, int n, double gap, double range, double *
 
     int bestCount = 0;
     int index = 0;
-    
+
     for (int i = 0; i < n; i++){   // This is calculating the mode of the readings
       int count = 0;                     // Iterating through sample readings and comparing to find the most occuring reading
       for (int j = 0; j < n; j++)
         if (fabs(a[j] - a[i]) <= range){
           count++;
         }
-      if (count > bestCount){ 
-        bestCount = count; 
-        index = i; 
+      if (count > bestCount){
+        bestCount = count;
+        index = i;
       }
     }
     double sum = 0; //sum of readings that are close
@@ -226,7 +226,7 @@ double averageReading(double *samples, int n, double gap, double range, double *
 // Calculates the change of position for velocity
 double changeInP(double *samples, int n){
   int k = n/4;
-  double oldAvg = 0;                 
+  double oldAvg = 0;
   double newAvg = 0;
   for (int i = 0; i < k; i++){
     oldAvg += samples[i];          // get average of older samples     // this is for redundancy
@@ -245,12 +245,12 @@ double closest(double a, double b, double ref){
   return b;
 }
 
-// Estimates and returns a position and uses *ok for if its good or bas estimate 
+// Estimates and returns a position and uses *ok for if its good or bas estimate
 double combinePosition(double *samples, double direction, double velocity, double prev, int *ok){
   double agree;
   double mean = averageReading(samples, PSAMPLES, direction*velocity*DT, MAX_RANGE_P, &agree);
   double predicted = prev + direction*velocity*DT;
-  if((agree >= MIN_AGREE_SCORE) && (fabs(mean - predicted) <= MAX_GAP_P)){   // SENSOR is correct if the percentage of similar samples is in range 
+  if((agree >= MIN_AGREE_SCORE) && (fabs(mean - predicted) <= MAX_GAP_P)){   // SENSOR is correct if the percentage of similar samples is in range
     *ok = 1;                                                                 // and the avg position is close enough to the estimated prosition based on velocity
   }
   else{
@@ -268,7 +268,7 @@ double combineVelocity(double *samplesV, double *samplesP, double direction, dou
   double velP = direction * changeInP(samplesP, PSAMPLES); // getting velocity from position samples
   if(vOk && pOk){
     if(fabs(velMean - velP) <= MAX_GAP_V){ // both of the calculated velocities are close
-      return velMean; 
+      return velMean;
     }
     return closest(velMean, velP, prev);  // return closest to previous reading
   }
@@ -282,7 +282,7 @@ double combineVelocity(double *samplesV, double *samplesP, double direction, dou
   if(!started){
     estVX = Velocity_X();
     estVY = Velocity_Y();
-    estPX = Position_X(); 
+    estPX = Position_X();
     estPY = Position_Y();
     fillSamples(sVX, VSAMPLES, estVX);
     fillSamples(sVY, VSAMPLES, estVY);
@@ -349,6 +349,34 @@ double getDefaultAngle(void)
   {
     return 270.0;
   }
+}
+
+bool SonarFailed()
+{
+  for (int i = 0; i < 36; i++)
+  {
+    if (SONAR_DIST[i] == -1)
+      return true;
+  }
+
+  return false;
+}
+
+double GetMinDistanceViaRangeFinder(double defaultAngle, double tilt)
+{
+  double dmin = 1000000;
+
+  rotateToAngle(defaultAngle + tilt);
+  double distPlus = RangeDist();
+
+  rotateToAngle(defaultAngle - tilt);
+  double distMinus = RangeDist();
+
+  rotateToAngle(defaultAngle);
+
+  dmin = fmin(distPlus, distMinus);
+
+  return dmin;
 }
 
 void Lander_Control(void)
@@ -438,7 +466,7 @@ void Lander_Control(void)
   // Ensure we will be OVER the platform when we land
   if (fabs(PLAT_X - estPX) / fabs(estVX) > 1.25 * fabs(PLAT_Y - estPY) / fabs(estVY))
     VYlim = 0;
-  
+
   // IMPORTANT NOTE: The code below assumes all components working
   // properly. IT MAY OR MAY NOT BE USEFUL TO YOU when components
   // fail. More likely, you will need a set of case-based code
@@ -720,18 +748,26 @@ void Safety_Override(void)
 
   // Horizontal direction.
   dmin = 1000000;
-  if (estVX > 0)
+  if (SonarFailed())
   {
-    for (int i = 5; i < 14; i++)
-      if (SONAR_DIST[i] > -1 && SONAR_DIST[i] < dmin)
-        dmin = SONAR_DIST[i];
+    dmin = GetMinDistanceViaRangeFinder(defaultAngle, 45);
   }
   else
   {
-    for (int i = 22; i < 32; i++)
-      if (SONAR_DIST[i] > -1 && SONAR_DIST[i] < dmin)
-        dmin = SONAR_DIST[i];
+    if (estVX > 0)
+    {
+      for (int i = 5; i < 14; i++)
+        if (SONAR_DIST[i] > -1 && SONAR_DIST[i] < dmin)
+          dmin = SONAR_DIST[i];
+    }
+    else
+    {
+      for (int i = 22; i < 32; i++)
+        if (SONAR_DIST[i] > -1 && SONAR_DIST[i] < dmin)
+          dmin = SONAR_DIST[i];
+    }
   }
+
   // Determine whether we're too close for comfort. There is a reason
   // to have this distance limit modulated by horizontal speed...
   // what is it?
@@ -797,20 +833,27 @@ void Safety_Override(void)
 
   // Vertical direction
   dmin = 1000000;
-  if (estVY > 5) // Mind this! there is a reason for it...
+  if (SonarFailed())
   {
-    for (int i = 0; i < 5; i++)
-      if (SONAR_DIST[i] > -1 && SONAR_DIST[i] < dmin)
-        dmin = SONAR_DIST[i];
-    for (int i = 32; i < 36; i++)
-      if (SONAR_DIST[i] > -1 && SONAR_DIST[i] < dmin)
-        dmin = SONAR_DIST[i];
+    dmin = GetMinDistanceViaRangeFinder(defaultAngle, 20);
   }
   else
   {
-    for (int i = 14; i < 22; i++)
-      if (SONAR_DIST[i] > -1 && SONAR_DIST[i] < dmin)
-        dmin = SONAR_DIST[i];
+    if (estVY > 5) // Mind this! there is a reason for it...
+    {
+      for (int i = 0; i < 5; i++)
+        if (SONAR_DIST[i] > -1 && SONAR_DIST[i] < dmin)
+          dmin = SONAR_DIST[i];
+      for (int i = 32; i < 36; i++)
+        if (SONAR_DIST[i] > -1 && SONAR_DIST[i] < dmin)
+          dmin = SONAR_DIST[i];
+    }
+    else
+    {
+      for (int i = 14; i < 22; i++)
+        if (SONAR_DIST[i] > -1 && SONAR_DIST[i] < dmin)
+          dmin = SONAR_DIST[i];
+    }
   }
 
   if (dmin < DistLimit) // Too close to a surface in the vertical direction
