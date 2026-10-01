@@ -5,8 +5,8 @@ ______________________________________________________________________
 
 Team name:
 
-Name 1 (last, first):
-Student number 1:
+Name 1 (last, first): Wang, Kevin
+Student number 1: 1010291284
 
 Name 2 (last, first):
 Student number 2:
@@ -23,11 +23,13 @@ you think the task could be completed
 
 a) The program can land the craft safely in mode '1'
   
-   - for the 'easy.ppm' map (yes/no)
-   - for the 'hard.ppm' map (yes/no)
+   - for the 'easy.ppm' map (Yes)
+   - for the 'hard.ppm' map (Yes)
 
-   If it fails, describe the conditions in which it fails and how
-   you think this could be resolved
+    If it fails, describe the conditions in which it fails and how
+    you think this could be resolved
+
+Rare failures in hard.ppm where the rover spawns right above terrain and an engine is broken. Could implement higher priority overrides to quickly increase distance to ground in these cases
 
 b) The program can land the craft safely in mode '2'
   
@@ -52,6 +54,8 @@ Questions:
 
 3) Describe your strategy for dealing with thruster failures
 
+In case of thruster failure, we choose one working thruster to be the primary. We then steer the lander by tilting left/right and thrusting while we descend
+
 4) Describe your strategy for dealing with sensor malfunctions:
 
    - Position sensors
@@ -70,21 +74,31 @@ Questions:
    (i.e. the pilot has control of thrusters and rotation).
    How would you change Safety_Override() so that it prevents
    the pilot from accidentally crashing the lander?
+
+Safety_Override() is disabled when we are close to the landing platform, which could allow the pilot to make moves which crash the lander. Preventing
    
 7) Do you think it is reasonable to write such a control function?
    (i.e. a routine that takes control from a human for their
     own safety)
 
+Yes this is reasonable. Especially in cases where components are broken, the craft becomes much more difficult to operate for a human user. In these cases faster inputs are required, and interpolation of missing sensor values must be made by the human themselves. Instead with a control system, these process are automated, which makes landing much simpler.
+
 8) Should the pilot be aware that this software is present?
    (yes or no, and tell me why you think so!)
+
+Yes, the pilot should be aware. In cases where the software overrides the user's controls, the pilot should understand what is happening, why its happening, and also know how to disable the software if needed (Boeing airplane example, pilots were unaware which contributed to the crashes)
 
 9) Would you buy/drive a car that you know has control software
    that will take control from you if it estimates you are
    doing something dangerous?
 
+Yes, sensors are always running and are able to have a faster reaction time compared to humans, who have the chance to be distracted while driving
+
 10) Can you as an embedded systems designer think of every 
     possible scenario that could go wrong so as to write 
     control software that ALWAYS works?
+
+No, there are nearly infinite possible scenarios where a system can go wrong. As an embedded systems designer, we can only generalize common scenarios and account for them to the best of our ability to ensure maximum safety.
 
     Think about that...
 ________________________________________________________________
