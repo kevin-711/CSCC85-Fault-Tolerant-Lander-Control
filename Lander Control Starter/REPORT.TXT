@@ -5,14 +5,14 @@ ______________________________________________________________________
 
 Team name:
 
-Name 1 (last, first):
-Student number 1:
+Name 1 (last, first): Wang, Kevin
+Student number 1: 1010291284
 
-Name 2 (last, first):
-Student number 2:
+Name 2 (last, first): Patel, Krish
+Student number 2: 1011221928
 
-Name 3 (last, first):
-Student number 3:
+Name 3 (last, first): Rahman, Tahmeed
+Student number 3:1011310957
 
 (special: Lose 5 marks for not completing the above information)
 _______________________________________________________________________
@@ -23,11 +23,13 @@ you think the task could be completed
 
 a) The program can land the craft safely in mode '1'
   
-   - for the 'easy.ppm' map (yes/no)
-   - for the 'hard.ppm' map (yes/no)
+   - for the 'easy.ppm' map (Yes)
+   - for the 'hard.ppm' map (Yes)
 
-   If it fails, describe the conditions in which it fails and how
-   you think this could be resolved
+    If it fails, describe the conditions in which it fails and how
+    you think this could be resolved
+
+Rare failures in hard.ppm where the rover spawns right above terrain and an engine is broken. Could implement higher priority overrides to quickly increase distance to ground in these cases
 
 b) The program can land the craft safely in mode '2'
   
@@ -47,17 +49,25 @@ Questions:
 1) What was the impact of having noisy sensors in your ability to
    determine the state of the craft and ultimately control it 
    properly?
+Noisy sensors made it hard to accurately understand the landers surroundings and estimate how to maneuver the lander to keep it from crashing and to make it land in the right spot.
 
 2) Describe the technique(s) you used to deal with sensor noise
+To deal with sensor noise we look multiple samples in each iteration and took the mode of if to estimate the accurate readings
 
 3) Describe your strategy for dealing with thruster failures
+
+In case of thruster failure, we choose one working thruster to be the primary. We then steer the lander by tilting left/right and thrusting while we descend
 
 4) Describe your strategy for dealing with sensor malfunctions:
 
    - Position sensors
+  For the position sensors, we kept if track of the velocity and created an estimated time for each iteration and calculated the change of position based on that. On top we also used the RangeDist() along with the angle that lander is turned to measure distance because of the case where the velocity sensors are also failing.
    - Velocity sensors
+To deal with failing velocity sensors, we took samples of the position through iterations and kept that in an array of oldest to newest readings. Then we average the first couple of readings and the last couple of readings and use the difference to calculate the slope using our DT value which is an estimate of time and calculate the velocity. Note we are using the position values after estimating the position value in the case the position sensors failed. 
    - Angle
+To deal with an angle sensor failing, we keep in track of how much we turned so far. SO basically we are keeping history of how much we turned and based on that awe are calculating our current angle of the lander.
    - Sonar
+For the instance where the Sonar sensor fails, based on the current working thruster we calculate how much we turned to get angle and that angle relative to the main thrusters current angle using rangedist would give us an estimate close to sonar. 
 
    What if you have multiple failures? what could you do if, for
    example both position and velocity sensors became inoperative?
@@ -65,26 +75,37 @@ Questions:
 5) What was the hardest failure type to deal with (i.e. which is
    the component, either sensor or control that makes the lander
    harder to handle?)?
+The hardest failure to handle was the sonar as it's checking the distance in many angles. Without it it was very hard to estimate how close we are getting to any obstructions especially on hard mode.
 
 6) Assume a human pilot was in charge of controlling the craft 
    (i.e. the pilot has control of thrusters and rotation).
    How would you change Safety_Override() so that it prevents
    the pilot from accidentally crashing the lander?
+
+Safety_Override() is disabled when we are close to the landing platform, which could allow the pilot to make moves which crash the lander. Preventing
    
 7) Do you think it is reasonable to write such a control function?
    (i.e. a routine that takes control from a human for their
     own safety)
 
+Yes this is reasonable. Especially in cases where components are broken, the craft becomes much more difficult to operate for a human user. In these cases faster inputs are required, and interpolation of missing sensor values must be made by the human themselves. Instead with a control system, these process are automated, which makes landing much simpler.
+
 8) Should the pilot be aware that this software is present?
    (yes or no, and tell me why you think so!)
+
+Yes, the pilot should be aware. In cases where the software overrides the user's controls, the pilot should understand what is happening, why its happening, and also know how to disable the software if needed (Boeing airplane example, pilots were unaware which contributed to the crashes)
 
 9) Would you buy/drive a car that you know has control software
    that will take control from you if it estimates you are
    doing something dangerous?
 
+Yes, sensors are always running and are able to have a faster reaction time compared to humans, who have the chance to be distracted while driving
+
 10) Can you as an embedded systems designer think of every 
     possible scenario that could go wrong so as to write 
     control software that ALWAYS works?
+
+No, there are nearly infinite possible scenarios where a system can go wrong. As an embedded systems designer, we can only generalize common scenarios and account for them to the best of our ability to ensure maximum safety.
 
     Think about that...
 ________________________________________________________________
@@ -106,4 +127,3 @@ Grading:
       sensor/engine failures, and still land on hard map        / Up to 15 depending on crunchiness
 
 Total for Project #1				                / 100
-
