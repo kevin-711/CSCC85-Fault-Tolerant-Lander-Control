@@ -8,11 +8,11 @@ Team name:
 Name 1 (last, first): Wang, Kevin
 Student number 1: 1010291284
 
-Name 2 (last, first):
-Student number 2:
+Name 2 (last, first): Patel, Krish
+Student number 2: 1011221928
 
-Name 3 (last, first):
-Student number 3:
+Name 3 (last, first): Rahman, Tahmeed
+Student number 3:1011310957
 
 (special: Lose 5 marks for not completing the above information)
 _______________________________________________________________________
